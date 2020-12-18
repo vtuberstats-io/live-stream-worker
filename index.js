@@ -37,4 +37,7 @@ async function init() {
   console.info('collect completed, bye');
 }
 
-init().catch((e) => console.error(e));
+init().catch((e) => {
+  console.error(`fatal error: ${e.stack}`);
+  process.exit(1);
+});
