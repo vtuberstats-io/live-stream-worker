@@ -1,0 +1,60 @@
+version: v1beta9
+vars:
+  - name: ENV_VIDEO_ID
+    source: env
+  - name: ENV_KAFKA_BROKERS
+    source: env
+images:
+  app:
+    image: devspace
+    preferSyncOverRebuild: true
+    injectRestartHelper: true
+    appendDockerfileInstructions:
+      - USER root
+    build:
+      docker:
+        skipPush: true
+deployments:
+  - name: live-stream-worker
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: devspace
+            env:
+              - name: VIDEO_ID
+                value: '${ENV_VIDEO_ID}'
+              - name: KAFKA_BROKERS
+                value: '${ENV_KAFKA_BROKERS}'
+        service:
+          ports:
+            - port: 9229
+dev:
+  sync:
+    - imageName: app
+      excludePaths:
+        - .git/
+      uploadExcludePaths:
+        - Dockerfile
+        - node_modules/
+        - devspace.yaml
+      onUpload:
+        restartContainer: true
+profiles:
+  - name: production
+    patches:
+      - op: remove
+        path: images.app.injectRestartHelper
+      - op: remove
+        path: images.app.appendDockerfileInstructions
+  - name: interactive
+    patches:
+      - op: add
+        path: dev.interactive
+        value:
+          defaultEnabled: true
+      - op: add
+        path: images.app.entrypoint
+        value:
+          - sleep
+          - '9999999999'

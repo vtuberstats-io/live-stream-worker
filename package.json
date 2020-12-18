@@ -1,0 +1,19 @@
+{
+  "name": "live-stream-worker",
+  "version": "0.0.1",
+  "description": "a component of vtuberstats.io",
+  "author": "darkyzhou",
+  "private": true,
+  "license": "Apache-2.0",
+  "scripts": {
+    "dev": "devspace dev",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "axios": "^0.21.0",
+    "kafkajs": "^1.15.0"
+  },
+  "devDependencies": {
+    "prettier": "^2.2.1"
+  }
+}
