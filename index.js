@@ -9,7 +9,7 @@ if (!YOUTUBE_API_KEY || !KAFKA_BROKERS || !VIDEO_ID || !HOSTNAME) {
   process.exit(1);
 }
 
-const { registerExitHook } = require('./lib/exit-hook');
+const { addExitHook, registerExitListener } = require('./lib/exit-hook');
 const { google } = require('googleapis');
 const { Kafka } = require('kafkajs');
 const { fetchLivestreamInfo } = require('./lib/livestream-info-fetcher');
@@ -25,7 +25,7 @@ const producer = kafka.producer();
 async function init() {
   console.info('connecting to kafka brokers');
   await producer.connect();
-  registerExitHook(async () => await producer.disconnect());
+  addExitHook(async () => await producer.disconnect());
 
   initFetchLivestreamInfo();
 
@@ -33,6 +33,7 @@ async function init() {
   await doCollectLivechatMessages();
 }
 
+registerExitListener();
 init();
 
 function initFetchLivestreamInfo() {
