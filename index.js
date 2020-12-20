@@ -9,6 +9,7 @@ if (!YOUTUBE_API_KEY || !KAFKA_BROKERS || !VIDEO_ID || !HOSTNAME) {
   process.exit(1);
 }
 
+const { registerExitHook } = require('./lib/exit-hook');
 const { google } = require('googleapis');
 const { Kafka } = require('kafkajs');
 const { fetchLivestreamInfo } = require('./lib/livestream-info-fetcher');
@@ -24,15 +25,15 @@ const producer = kafka.producer();
 async function init() {
   console.info('connecting to kafka brokers');
   await producer.connect();
+  registerExitHook(async () => await producer.disconnect());
 
   initFetchLivestreamInfo();
+
+  console.info(`start collecting livechat messages of video ${VIDEO_ID}`);
   await doCollectLivechatMessages();
 }
 
-init().catch((e) => {
-  console.error(`fatal error: ${e.stack}`);
-  process.exit(1);
-});
+init();
 
 function initFetchLivestreamInfo() {
   const fetchTask = async () => {
@@ -71,7 +72,6 @@ function initFetchLivestreamInfo() {
 }
 
 async function doCollectLivechatMessages() {
-  console.info(`start collecting livechat messages of video ${VIDEO_ID}`);
   for await (const chatMessages of fetchLiveChatMessages(VIDEO_ID)) {
     const validMessages = chatMessages.filter((message) => {
       if (message.error) {
