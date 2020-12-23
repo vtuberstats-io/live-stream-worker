@@ -2,16 +2,18 @@ const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const KAFKA_BROKERS = process.env.KAFKA_BROKERS;
 const VIDEO_ID = process.env.VIDEO_ID;
 const FETCH_INFO_INTERVAL_SECONDS = process.env.FETCH_INFO_INTERVAL_SECONDS || 200;
+const REDIS = process.env.REDIS;
 const HOSTNAME = process.env.HOSTNAME; // offered by kubernetes automatically
 
-if (!YOUTUBE_API_KEY || !KAFKA_BROKERS || !VIDEO_ID || !HOSTNAME) {
+if (!YOUTUBE_API_KEY || !KAFKA_BROKERS || !VIDEO_ID || !REDIS_HOST || !HOSTNAME) {
   console.error(`missing environment variables, env: ${JSON.stringify(process.env)}`);
   process.exit(1);
 }
 
-const { addExitHook, registerExitListener } = require('./lib/exit-hook');
+const { addExitHook, executeAllHooksAndTerminate } = require('exit-hook-plus');
 const { google } = require('googleapis');
 const { Kafka } = require('kafkajs');
+const Redis = require('ioredis');
 const { fetchLivestreamInfo } = require('./lib/livestream-info-fetcher');
 const { fetchLiveChatMessages } = require('./lib/livechat-fetcher');
 
@@ -21,8 +23,14 @@ const kafka = new Kafka({
   brokers: KAFKA_BROKERS.trim().split(',')
 });
 const producer = kafka.producer();
+const redis = new Redis(REDIS);
 
 async function init() {
+  console.info('connecting to redis');
+  await redis.connect();
+  addExitHook(() => redis.disconnect());
+  // TODO: recover from redis
+
   console.info('connecting to kafka brokers');
   await producer.connect();
   addExitHook(async () => await producer.disconnect());
@@ -33,7 +41,6 @@ async function init() {
   await doCollectLivechatMessages();
 }
 
-registerExitListener();
 init();
 
 function initFetchLivestreamInfo() {
@@ -51,7 +58,9 @@ function initFetchLivestreamInfo() {
         messages: [
           {
             value: JSON.stringify({
-              videoId: VIDEO_ID,
+              meta: {
+                videoId: VIDEO_ID
+              },
               data: info
             })
           }
@@ -62,8 +71,8 @@ function initFetchLivestreamInfo() {
     }
 
     if (streamEnded) {
-      console.info('stream ended. will exit in 8 seconds, bye');
-      setTimeout(() => process.exit(0), 8000);
+      console.info('stream ended. will exit in 60 seconds, bye');
+      setTimeout(() => executeAllHooksAndTerminate(0, {}), 60 * 1000);
     } else {
       setTimeout(fetchTask, FETCH_INFO_INTERVAL_SECONDS * 1000);
     }
@@ -88,7 +97,9 @@ async function doCollectLivechatMessages() {
       topic: 'livechat-message',
       messages: validMessages.map((m) => ({
         value: JSON.stringify({
-          videoId: VIDEO_ID,
+          meta: {
+            videoId: VIDEO_ID
+          },
           data: m
         })
       }))

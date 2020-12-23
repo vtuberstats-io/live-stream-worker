@@ -6,6 +6,8 @@ vars:
     source: env
   - name: ENV_KAFKA_BROKERS
     source: env
+  - name: ENV_REDIS
+    source: env
 images:
   app:
     image: devspace
@@ -30,6 +32,8 @@ deployments:
                 value: '${ENV_VIDEO_ID}'
               - name: KAFKA_BROKERS
                 value: '${ENV_KAFKA_BROKERS}'
+              - name: REDIS
+                value: '${ENV_REDIS}'
         service:
           ports:
             - port: 9229
