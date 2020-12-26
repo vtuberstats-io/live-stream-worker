@@ -29,7 +29,11 @@ async function init() {
   console.info('connecting to redis');
   await redis.connect();
   addExitHook(() => redis.disconnect());
-  // TODO: recover from redis
+
+  const lastContinuation = await redis.hget(`lsw-${HOSTNAME}`, 'continuation');
+  if (lastContinuation) {
+    console.info(`will recover using latest continuation: '${lastContinuation}'`);
+  }
 
   console.info('connecting to kafka brokers');
   await producer.connect();
@@ -38,7 +42,7 @@ async function init() {
   initFetchLivestreamInfo();
 
   console.info(`start collecting livechat messages of video ${VIDEO_ID}`);
-  await doCollectLivechatMessages();
+  await doCollectLivechatMessages(lastContinuation);
 }
 
 init();
@@ -59,6 +63,7 @@ function initFetchLivestreamInfo() {
           {
             value: JSON.stringify({
               meta: {
+                timestamp: new Date().toISOString(),
                 videoId: VIDEO_ID
               },
               data: info
@@ -81,8 +86,12 @@ function initFetchLivestreamInfo() {
   fetchTask();
 }
 
-async function doCollectLivechatMessages() {
-  for await (const chatMessages of fetchLiveChatMessages(VIDEO_ID)) {
+async function doCollectLivechatMessages(lastContinuation) {
+  for await (const chatMessages of fetchLiveChatMessages(
+    VIDEO_ID,
+    async (c) => await onNewContinuation(c),
+    lastContinuation
+  )) {
     const validMessages = chatMessages.filter((message) => {
       if (message.error) {
         console.warn(`error collecting livechat messages: ${message.error}`);
@@ -105,4 +114,8 @@ async function doCollectLivechatMessages() {
       }))
     });
   }
+}
+
+async function onNewContinuation(continuation) {
+  await redis.hset(`lsw-${HOSTNAME}`, 'continuation', continuation);
 }
