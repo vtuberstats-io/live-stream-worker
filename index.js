@@ -104,6 +104,10 @@ async function doCollectLivechatMessages(lastContinuation) {
       return true;
     });
 
+    if (validMessages.length <= 0) {
+      continue;
+    }
+
     console.info(`sending ${validMessages.length} messages to kafka`);
     await producer.send({
       acks: -1,
