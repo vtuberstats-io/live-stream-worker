@@ -98,7 +98,9 @@ async function doCollectLivechatMessages(lastContinuation) {
   )) {
     const validMessages = chatMessages.filter((message) => {
       if (message.error) {
-        console.warn(`error collecting livechat messages: ${message.error}`);
+        console.warn(
+          `error collecting livechat messages: ${message.error}, actionRaw: ${message.actionRaw}`
+        );
         return false;
       }
       return true;
@@ -115,6 +117,7 @@ async function doCollectLivechatMessages(lastContinuation) {
       messages: validMessages.map((m) => ({
         value: JSON.stringify({
           meta: {
+            offsetTimeMs: m.offsetTimeMs,
             domain: DOMAIN,
             videoId: VIDEO_ID
           },
