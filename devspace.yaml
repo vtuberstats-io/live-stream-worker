@@ -2,6 +2,8 @@ version: v1beta9
 vars:
   - name: ENV_YOUTUBE_API_KEY
     source: env
+  - name: ENV_DOMAIN
+    source: env
   - name: ENV_VIDEO_ID
     source: env
   - name: ENV_KAFKA_BROKERS
@@ -28,6 +30,8 @@ deployments:
             env:
               - name: YOUTUBE_API_KEY
                 value: '${ENV_YOUTUBE_API_KEY}'
+              - name: DOMAIN
+                value: '${ENV_DOMAIN}'
               - name: VIDEO_ID
                 value: '${ENV_VIDEO_ID}'
               - name: KAFKA_BROKERS

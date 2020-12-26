@@ -1,11 +1,12 @@
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const KAFKA_BROKERS = process.env.KAFKA_BROKERS;
+const DOMAIN = process.env.DOMAIN;
 const VIDEO_ID = process.env.VIDEO_ID;
 const FETCH_INFO_INTERVAL_SECONDS = process.env.FETCH_INFO_INTERVAL_SECONDS || 200;
 const REDIS = process.env.REDIS;
 const HOSTNAME = process.env.HOSTNAME; // offered by kubernetes automatically
 
-if (!YOUTUBE_API_KEY || !KAFKA_BROKERS || !VIDEO_ID || !REDIS || !HOSTNAME) {
+if (!YOUTUBE_API_KEY || !KAFKA_BROKERS || !DOMAIN || !VIDEO_ID || !REDIS || !HOSTNAME) {
   console.error(`missing environment variables, env: ${JSON.stringify(process.env)}`);
   process.exit(1);
 }
@@ -29,6 +30,8 @@ async function init() {
   console.info('connecting to redis');
   await redis.connect();
   addExitHook(async () => await redis.quit());
+
+  // TODO: domain for bilibili
 
   const lastContinuation = await redis.hget(`lsw-${HOSTNAME}`, 'continuation');
   if (lastContinuation) {
@@ -64,6 +67,7 @@ function initFetchLivestreamInfo() {
             value: JSON.stringify({
               meta: {
                 timestamp: new Date().toISOString(),
+                domain: DOMAIN,
                 videoId: VIDEO_ID
               },
               data: info
@@ -107,6 +111,7 @@ async function doCollectLivechatMessages(lastContinuation) {
       messages: validMessages.map((m) => ({
         value: JSON.stringify({
           meta: {
+            domain: DOMAIN,
             videoId: VIDEO_ID
           },
           data: m
