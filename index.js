@@ -5,7 +5,7 @@ const FETCH_INFO_INTERVAL_SECONDS = process.env.FETCH_INFO_INTERVAL_SECONDS || 2
 const REDIS = process.env.REDIS;
 const HOSTNAME = process.env.HOSTNAME; // offered by kubernetes automatically
 
-if (!YOUTUBE_API_KEY || !KAFKA_BROKERS || !VIDEO_ID || !REDIS_HOST || !HOSTNAME) {
+if (!YOUTUBE_API_KEY || !KAFKA_BROKERS || !VIDEO_ID || !REDIS || !HOSTNAME) {
   console.error(`missing environment variables, env: ${JSON.stringify(process.env)}`);
   process.exit(1);
 }
@@ -28,7 +28,7 @@ const redis = new Redis(REDIS);
 async function init() {
   console.info('connecting to redis');
   await redis.connect();
-  addExitHook(() => redis.disconnect());
+  addExitHook(async () => await redis.quit());
 
   const lastContinuation = await redis.hget(`lsw-${HOSTNAME}`, 'continuation');
   if (lastContinuation) {
