@@ -81,6 +81,7 @@ function initFetchLivestreamInfo() {
 
     if (streamEnded) {
       console.info('stream ended. will exit in 60 seconds, bye');
+      addExitHook(async () => await redis.hdel(`lsw-${HOSTNAME}`, 'continuation'));
       setTimeout(() => executeAllHooksAndTerminate(0, {}), 60 * 1000);
     } else {
       setTimeout(fetchTask, FETCH_INFO_INTERVAL_SECONDS * 1000);
