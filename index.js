@@ -6,8 +6,16 @@ const FETCH_INFO_INTERVAL_SECONDS = process.env.FETCH_INFO_INTERVAL_SECONDS || 2
 const REDIS = process.env.REDIS;
 const HOSTNAME = process.env.HOSTNAME; // offered by kubernetes automatically
 
-if (!YOUTUBE_API_KEY || !KAFKA_BROKERS || !DOMAIN || !VIDEO_ID || !REDIS || !HOSTNAME) {
-  console.error(`missing environment variables, env: ${JSON.stringify(process.env)}`);
+if (
+  !YOUTUBE_API_KEY ||
+  !KAFKA_BROKERS ||
+  !DOMAIN ||
+  !VIDEO_ID ||
+  !FETCH_INFO_INTERVAL_SECONDS ||
+  !REDIS ||
+  !HOSTNAME
+) {
+  console.error(`missing or invalid environment variables, env: ${JSON.stringify(process.env)}`);
   process.exit(1);
 }
 
